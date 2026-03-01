@@ -1,0 +1,88 @@
+.approach {
+  overflow: hidden;
+}
+
+.content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.quote {
+  margin: 40px 0;
+  padding: 40px;
+  background-color: white;
+  border-radius: 12px;
+  border-left: 4px solid var(--color-secondary);
+}
+
+.hebrewSaying {
+  font-size: 1.5rem;
+  font-style: italic;
+  color: var(--color-primary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.quoteSource {
+  font-size: 0.95rem;
+  color: var(--color-text-light);
+}
+
+.description {
+  text-align: left;
+  margin-bottom: 48px;
+}
+
+.description p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--color-text);
+  margin-bottom: 20px;
+}
+
+.description p:last-child {
+  margin-bottom: 0;
+}
+
+.values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.valueItem {
+  background-color: white;
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.valueTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.valueDescription {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--color-text-light);
+}
+
+@media (max-width: 768px) {
+  .hebrewSaying {
+    font-size: 1.25rem;
+  }
+
+  .values {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .quote {
+    padding: 24px;
+  }
+}

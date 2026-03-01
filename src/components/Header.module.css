@@ -1,0 +1,111 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: -0.5px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.navLink {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  color: var(--color-secondary);
+}
+
+.ctaButton {
+  padding: 10px 24px;
+  font-size: 0.9rem;
+}
+
+.menuButton {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.menuIcon {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-text);
+  position: relative;
+}
+
+.menuIcon::before,
+.menuIcon::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-text);
+  left: 0;
+}
+
+.menuIcon::before {
+  top: -8px;
+}
+
+.menuIcon::after {
+  bottom: -8px;
+}
+
+@media (max-width: 768px) {
+  .menuButton {
+    display: block;
+  }
+
+  .nav {
+    position: absolute;
+    top: 72px;
+    left: 0;
+    right: 0;
+    background-color: white;
+    flex-direction: column;
+    padding: 24px;
+    gap: 20px;
+    border-bottom: 1px solid var(--color-border);
+    display: none;
+  }
+
+  .navOpen {
+    display: flex;
+  }
+
+  .ctaButton {
+    width: 100%;
+    text-align: center;
+  }
+}

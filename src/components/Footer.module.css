@@ -1,0 +1,128 @@
+.footer {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 80px 0 40px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1.5fr;
+  gap: 40px;
+  margin-bottom: 60px;
+}
+
+.brand {
+  max-width: 280px;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.tagline {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  opacity: 0.85;
+}
+
+.linksTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nav a {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.nav a:hover {
+  opacity: 1;
+}
+
+.contact {
+  display: flex;
+  flex-direction: column;
+}
+
+.contactInfo {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  margin-bottom: 8px;
+}
+
+.email {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.email:hover {
+  opacity: 1;
+}
+
+.bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.copyright {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.social {
+  display: flex;
+  gap: 24px;
+}
+
+.social a {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.social a:hover {
+  opacity: 1;
+}
+
+@media (max-width: 968px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .brand {
+    grid-column: span 2;
+    max-width: 100%;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .brand {
+    grid-column: span 1;
+  }
+
+  .bottom {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+}
