@@ -1,9 +1,14 @@
 const { execSync } = require('child_process')
 
-let commitHash = 'unknown'
-try {
-  commitHash = execSync('git rev-parse --short HEAD').toString().trim()
-} catch {}
+let commitHash = process.env.VERCEL_GIT_COMMIT_SHA
+  ? process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7)
+  : 'unknown'
+
+if (commitHash === 'unknown') {
+  try {
+    commitHash = execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {}
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
