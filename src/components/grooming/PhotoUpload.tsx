@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 type Props = {
   onImageUpload: (imageData: string, breed: string) => void
@@ -67,6 +67,24 @@ export default function PhotoUpload({ onImageUpload }: Props) {
     }
   }, [handleFile])
 
+  // Global paste listener for clipboard images
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault()
+          const file = item.getAsFile()
+          if (file) handleFile(file)
+          return
+        }
+      }
+    }
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [handleFile])
+
   const handleContinue = () => {
     if (previewImage) {
       const breed = manualBreed || detectedBreed || 'Mixed Breed'
@@ -103,6 +121,7 @@ export default function PhotoUpload({ onImageUpload }: Props) {
             <div className="upload-icon">📷</div>
             <h3>Drop your dog's photo here</h3>
             <p>or click to browse files</p>
+            <p style={{ marginTop: '8px', fontSize: '0.9rem' }}>You can also <strong>paste</strong> an image from your clipboard (Ctrl+V / Cmd+V)</p>
             <div className="upload-formats">Supports JPG, PNG, WEBP</div>
             <input
               ref={fileInputRef}
