@@ -1602,11 +1602,11 @@
   color: var(--grooming-primary);
 }
 
-/* Grooming Loading Animation */
+/* Grooming Loading Overlay */
 .grooming-loading-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1615,47 +1615,282 @@
   border-radius: var(--grooming-radius);
 }
 
-.grooming-animation {
-  position: relative;
-  width: 100px;
-  height: 100px;
+/* Grooming Mini-Game */
+.gg-container {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px;
+  user-select: none;
+}
+
+.gg-hud {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.gg-level {
+  color: var(--grooming-primary);
+}
+
+.gg-timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--grooming-text);
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.gg-timer.gg-urgent {
+  color: #dc2626;
+  animation: timerPulse 0.4s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.gg-score {
+  color: var(--grooming-text-light);
+  font-size: 0.75rem;
+}
+
+.gg-progress-bar {
+  height: 6px;
+  background: var(--grooming-border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.gg-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--grooming-primary), var(--grooming-accent));
+  border-radius: 3px;
+  transition: width 0.15s ease-out;
+}
+
+.gg-board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: crosshair;
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.1);
+}
+
+.gg-dog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4.5rem;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.gg-shaggy {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 5rem;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 2;
+  filter: blur(0.5px);
+}
+
+.gg-tuft {
+  position: absolute;
+  z-index: 3;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+  width: 28px;
+  height: 28px;
+}
+
+.gg-tuft::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse, #b8860b 0%, #d4a43a 40%, transparent 70%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  opacity: 0.85;
+  animation: tuftWiggle 1.5s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.1s);
+}
+
+.gg-tuft:hover::before {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.gg-tuft:active::before {
+  transform: scale(0.8);
+}
+
+@keyframes tuftWiggle {
+  0%, 100% { transform: rotate(-3deg) scale(1); }
+  50% { transform: rotate(3deg) scale(1.05); }
+}
+
+.gg-snip {
+  position: absolute;
+  font-size: 1.2rem;
+  pointer-events: none;
+  z-index: 5;
+  animation: snipPop 0.5s ease-out forwards;
+}
+
+@keyframes snipPop {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -80%) scale(1.3) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+/* Win overlay */
+.gg-win-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  z-index: 10;
+  animation: winFadeIn 0.4s ease-out;
+  border-radius: 50%;
 }
 
-.grooming-dog {
+@keyframes winFadeIn {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.gg-ribbon {
   font-size: 3rem;
-  animation: dogPulse 1.5s ease-in-out infinite;
+  animation: ribbonBounce 0.6s ease-out;
 }
 
-.grooming-scissors {
-  position: absolute;
-  font-size: 1.8rem;
-  animation: scissorsOrbit 2s linear infinite;
+@keyframes ribbonBounce {
+  0% { transform: scale(0) rotate(-20deg); }
+  50% { transform: scale(1.3) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
 }
 
-.grooming-loading-text {
-  margin-top: 16px;
-  font-weight: 600;
+.gg-win-text {
+  font-size: 1.1rem;
+  font-weight: 800;
   color: var(--grooming-primary);
-  font-size: 0.95rem;
-  animation: textFade 1.5s ease-in-out infinite;
+  margin: 4px 0;
 }
 
-@keyframes dogPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.12); }
+.gg-prize {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-radius: 20px;
+  font-size: 0.8rem;
 }
 
-@keyframes scissorsOrbit {
-  0% { transform: rotate(0deg) translateX(42px) rotate(0deg); }
-  100% { transform: rotate(360deg) translateX(42px) rotate(-360deg); }
+.gg-prize-emoji {
+  font-size: 1.2rem;
 }
 
-@keyframes textFade {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+.gg-prize-name {
+  font-weight: 600;
+  color: #92400e;
+}
+
+.gg-next-btn {
+  margin-top: 8px;
+  padding: 6px 16px;
+  background: var(--grooming-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.gg-next-btn:hover {
+  background: var(--grooming-primary-dark);
+}
+
+/* Lose overlay */
+.gg-lose-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: winFadeIn 0.4s ease-out;
+  border-radius: 50%;
+}
+
+.gg-lose-icon {
+  font-size: 2.5rem;
+}
+
+.gg-lose-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #dc2626;
+  margin: 4px 0;
+}
+
+.gg-lose-sub {
+  font-size: 0.75rem;
+  color: var(--grooming-text-light);
+}
+
+.gg-retry-btn {
+  margin-top: 8px;
+  padding: 6px 16px;
+  background: var(--grooming-secondary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.gg-retry-btn:hover {
+  background: #d97706;
+}
+
+.gg-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--grooming-text-light);
+  margin-top: 6px;
+  font-weight: 500;
 }
 
 /* Debug Modal */

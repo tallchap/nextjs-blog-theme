@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { GroomingStyle } from '@/app/grooming/page'
+import GroomingGame from './GroomingGame'
 
 type Props = {
   dogImage: string
@@ -159,11 +160,7 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
 
         {loading && (
           <div className="grooming-loading-overlay">
-            <div className="grooming-animation">
-              <span className="grooming-dog">🐕</span>
-              <span className="grooming-scissors">✂️</span>
-            </div>
-            <p className="grooming-loading-text">Grooming in progress...</p>
+            <GroomingGame />
           </div>
         )}
 
