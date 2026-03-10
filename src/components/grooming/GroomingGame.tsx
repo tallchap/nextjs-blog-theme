@@ -1,197 +1,178 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
-type FurTuft = {
-  id: number
-  x: number
-  y: number
-  size: number
-  alive: boolean
+type Question = {
+  question: string
+  options: string[]
+  stat: string // label for the comparison stat
+  statValues: Record<string, number> // percentage of dog owners who picked each option
 }
 
-const PRIZES = [
-  { emoji: '🦴', name: 'Golden Bone' },
-  { emoji: '🎾', name: 'Tennis Ball Trophy' },
-  { emoji: '👑', name: 'Royal Crown' },
-  { emoji: '🥩', name: 'Wagyu Steak' },
-  { emoji: '💎', name: 'Diamond Collar' },
-  { emoji: '🧸', name: 'Giant Teddy Bear' },
-  { emoji: '🛁', name: 'Spa Day Pass' },
-  { emoji: '🏆', name: 'Grand Champion Cup' },
+const ALL_QUESTIONS: Question[] = [
+  {
+    question: "Do you know your dog's exact birthday?",
+    options: ['Yes, to the day!', 'Roughly', 'No idea'],
+    stat: 'of dog owners',
+    statValues: { 'Yes, to the day!': 42, 'Roughly': 38, 'No idea': 20 },
+  },
+  {
+    question: 'Does your dog sleep in bed with you?',
+    options: ['Every night', 'Sometimes', 'Never'],
+    stat: 'of dog owners',
+    statValues: { 'Every night': 45, 'Sometimes': 30, 'Never': 25 },
+  },
+  {
+    question: 'How does your dog react to bath time?',
+    options: ['Loves it!', 'Tolerates it', 'Total drama'],
+    stat: 'of dogs',
+    statValues: { 'Loves it!': 18, 'Tolerates it': 37, 'Total drama': 45 },
+  },
+  {
+    question: 'Does your dog have a favorite toy?',
+    options: ['Yes, obsessed', 'A few favorites', 'Destroys them all'],
+    stat: 'of dogs',
+    statValues: { 'Yes, obsessed': 52, 'A few favorites': 33, 'Destroys them all': 15 },
+  },
+  {
+    question: 'How does your dog greet you when you come home?',
+    options: ['Full zoomies', 'Tail wag + kisses', 'Cool & casual'],
+    stat: 'of dogs',
+    statValues: { 'Full zoomies': 35, 'Tail wag + kisses': 48, 'Cool & casual': 17 },
+  },
+  {
+    question: 'Does your dog know any tricks?',
+    options: ['5+ tricks', 'Sit & shake', 'Just vibes'],
+    stat: 'of dogs',
+    statValues: { '5+ tricks': 28, 'Sit & shake': 44, 'Just vibes': 28 },
+  },
+  {
+    question: "What's your dog's stance on the vacuum?",
+    options: ['Mortal enemy', 'Suspicious', 'Couldn\'t care less'],
+    stat: 'of dogs',
+    statValues: { 'Mortal enemy': 40, 'Suspicious': 35, 'Couldn\'t care less': 25 },
+  },
+  {
+    question: 'Does your dog have a middle name?',
+    options: ['Obviously', 'Just a nickname', 'No'],
+    stat: 'of dog owners',
+    statValues: { 'Obviously': 33, 'Just a nickname': 40, 'No': 27 },
+  },
+  {
+    question: 'How often do you talk to your dog like a person?',
+    options: ['Constantly', 'A lot', 'Sometimes'],
+    stat: 'of dog owners',
+    statValues: { 'Constantly': 55, 'A lot': 32, 'Sometimes': 13 },
+  },
+  {
+    question: 'Has your dog ever stolen food off the counter?',
+    options: ['Multiple times', 'Once (that I know of)', 'Never'],
+    stat: 'of dogs',
+    statValues: { 'Multiple times': 38, 'Once (that I know of)': 30, 'Never': 32 },
+  },
+  {
+    question: "What's your dog's energy level?",
+    options: ['Turbo mode 24/7', 'Active but chill', 'Professional napper'],
+    stat: 'of dogs',
+    statValues: { 'Turbo mode 24/7': 25, 'Active but chill': 45, 'Professional napper': 30 },
+  },
+  {
+    question: 'Does your dog get along with other dogs?',
+    options: ['Best friends with all', 'Selective', 'Prefers humans'],
+    stat: 'of dogs',
+    statValues: { 'Best friends with all': 40, 'Selective': 42, 'Prefers humans': 18 },
+  },
+  {
+    question: 'Does your dog have an Instagram account?',
+    options: ['Yes!', 'Thought about it', 'No way'],
+    stat: 'of dog owners',
+    statValues: { 'Yes!': 15, 'Thought about it': 30, 'No way': 55 },
+  },
+  {
+    question: 'How does your dog feel about car rides?',
+    options: ['Head out the window!', 'Sleeps the whole time', 'Gets anxious'],
+    stat: 'of dogs',
+    statValues: { 'Head out the window!': 50, 'Sleeps the whole time': 28, 'Gets anxious': 22 },
+  },
 ]
 
-// Place fur tufts directly on the dog body area (center region)
-function generateFur(count: number): FurTuft[] {
-  const tufts: FurTuft[] = []
-  // Dog body zones: head, body left, body right, legs
-  const zones = [
-    { cx: 50, cy: 25, rx: 18, ry: 12 },  // head
-    { cx: 38, cy: 48, rx: 14, ry: 18 },  // left body
-    { cx: 62, cy: 48, rx: 14, ry: 18 },  // right body
-    { cx: 50, cy: 50, rx: 20, ry: 15 },  // center body
-    { cx: 35, cy: 72, rx: 10, ry: 10 },  // front legs
-    { cx: 65, cy: 72, rx: 10, ry: 10 },  // back legs
-    { cx: 50, cy: 35, rx: 22, ry: 10 },  // upper body
-  ]
-  for (let i = 0; i < count; i++) {
-    const zone = zones[i % zones.length]
-    tufts.push({
-      id: i,
-      x: zone.cx + (Math.random() - 0.5) * 2 * zone.rx,
-      y: zone.cy + (Math.random() - 0.5) * 2 * zone.ry,
-      size: 20 + Math.random() * 16,
-      alive: true,
-    })
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
   }
-  return tufts
-}
-
-function getLevelConfig(level: number) {
-  return {
-    furCount: 8 + level * 5,
-    timeLimit: Math.max(5, 12 - (level - 1) * 1),
-  }
+  return a
 }
 
 export default function GroomingGame() {
-  const [level, setLevel] = useState(1)
-  const [fur, setFur] = useState<FurTuft[]>([])
-  const [timeLeft, setTimeLeft] = useState(0)
-  const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing')
-  const [totalWins, setTotalWins] = useState(0)
-  const [snips, setSnips] = useState<{ id: number; x: number; y: number }[]>([])
-  const snipId = useRef(0)
+  const questions = useMemo(() => shuffle(ALL_QUESTIONS), [])
+  const [qIndex, setQIndex] = useState(0)
+  const [selected, setSelected] = useState<string | null>(null)
+  const [answered, setAnswered] = useState(0)
 
-  const startLevel = useCallback((lvl: number) => {
-    const config = getLevelConfig(lvl)
-    setFur(generateFur(config.furCount))
-    setTimeLeft(config.timeLimit)
-    setGameState('playing')
-    setSnips([])
-  }, [])
+  const q = questions[qIndex % questions.length]
 
-  useEffect(() => { startLevel(1) }, [startLevel])
-
-  // Countdown timer
+  // Auto-advance after showing the stat for 2.5s
   useEffect(() => {
-    if (gameState !== 'playing') return
-    const iv = setInterval(() => {
-      setTimeLeft(prev => {
-        const next = +(prev - 0.1).toFixed(1)
-        if (next <= 0) { setGameState('lost'); return 0 }
-        return next
-      })
-    }, 100)
-    return () => clearInterval(iv)
-  }, [gameState])
+    if (!selected) return
+    const timer = setTimeout(() => {
+      setSelected(null)
+      setQIndex(i => i + 1)
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [selected])
 
-  // Win check
-  useEffect(() => {
-    if (gameState !== 'playing' || fur.length === 0) return
-    if (fur.every(f => !f.alive)) {
-      setGameState('won')
-      setTotalWins(w => w + 1)
-    }
-  }, [fur, gameState])
-
-  const handleClick = (id: number, e: React.MouseEvent) => {
-    if (gameState !== 'playing') return
-    e.stopPropagation()
-
-    // Snip effect at click position
-    const board = (e.currentTarget as HTMLElement).closest('.gg-board')
-    if (board) {
-      const rect = board.getBoundingClientRect()
-      const sid = snipId.current++
-      setSnips(prev => [...prev, { id: sid, x: e.clientX - rect.left, y: e.clientY - rect.top }])
-      setTimeout(() => setSnips(prev => prev.filter(s => s.id !== sid)), 500)
-    }
-
-    setFur(prev => prev.map(f => f.id === id ? { ...f, alive: false } : f))
+  const handlePick = (option: string) => {
+    if (selected) return
+    setSelected(option)
+    setAnswered(a => a + 1)
   }
 
-  const aliveCount = fur.filter(f => f.alive).length
-  const totalCount = fur.length
-  const trimmed = totalCount > 0 ? (totalCount - aliveCount) / totalCount : 0
-  const config = getLevelConfig(level)
-  const urgent = timeLeft < config.timeLimit * 0.3
-  const prize = PRIZES[(totalWins - 1) % PRIZES.length]
+  const yourPct = selected ? q.statValues[selected] ?? 0 : 0
 
   return (
-    <div className="gg-container">
-      <div className="gg-hud">
-        <span className="gg-level">Level {level}</span>
-        <span className={`gg-timer ${urgent ? 'gg-urgent' : ''}`}>{timeLeft.toFixed(1)}s</span>
-        {totalWins > 0 && <span className="gg-score">{totalWins}x 🏅</span>}
+    <div className="dq-container">
+      <div className="dq-header">
+        <span className="dq-icon">🐾</span>
+        <span className="dq-title">Dog Parent Quiz</span>
+        <span className="dq-count">{answered} answered</span>
       </div>
 
-      <div className="gg-progress-bar">
-        <div className="gg-progress-fill" style={{ width: `${trimmed * 100}%` }} />
-      </div>
+      <div className="dq-question">{q.question}</div>
 
-      <div className="gg-board">
-        {/* Groomed poodle underneath — fades in as fur is removed */}
-        <div className={`gg-poodle ${gameState === 'won' ? 'gg-dance' : ''}`} style={{ opacity: 0.15 + trimmed * 0.85 }}>
-          🐩
-        </div>
-
-        {/* Shaggy dog on top — fades out as fur is removed */}
-        <div className="gg-shaggy" style={{ opacity: Math.max(0, 1 - trimmed * 1.3) }}>
-          🐕
-        </div>
-
-        {/* Fur tufts layered on the dog */}
-        {fur.map(tuft =>
-          tuft.alive ? (
+      <div className="dq-options">
+        {q.options.map(opt => {
+          const pct = q.statValues[opt] ?? 0
+          const isSelected = selected === opt
+          const showResult = selected !== null
+          return (
             <button
-              key={tuft.id}
-              className="gg-tuft"
-              style={{
-                left: `${tuft.x}%`,
-                top: `${tuft.y}%`,
-                width: tuft.size,
-                height: tuft.size,
-              }}
-              onClick={(e) => handleClick(tuft.id, e)}
-            />
-          ) : null
-        )}
-
-        {/* Scissors snip effects */}
-        {snips.map(s => (
-          <span key={s.id} className="gg-snip" style={{ left: s.x, top: s.y }}>✂️</span>
-        ))}
-
-        {/* Win: blue ribbon + dancing poodle */}
-        {gameState === 'won' && (
-          <div className="gg-win-overlay">
-            <div className="gg-ribbon">🥇</div>
-            <div className="gg-win-text">Groomed!</div>
-            <div className="gg-prize">
-              <span>{prize.emoji}</span>
-              <span className="gg-prize-name">{prize.name}</span>
-            </div>
-            <button className="gg-next-btn" onClick={() => { setLevel(l => l + 1); startLevel(level + 1) }}>
-              Level {level + 1} &rarr;
+              key={opt}
+              className={`dq-option ${isSelected ? 'dq-selected' : ''} ${showResult ? 'dq-revealed' : ''}`}
+              onClick={() => handlePick(opt)}
+              disabled={showResult}
+            >
+              <span className="dq-option-text">{opt}</span>
+              {showResult && (
+                <div className="dq-bar-wrap">
+                  <div className="dq-bar" style={{ width: `${pct}%` }} />
+                  <span className="dq-pct">{pct}%</span>
+                </div>
+              )}
             </button>
-          </div>
-        )}
-
-        {/* Lose */}
-        {gameState === 'lost' && (
-          <div className="gg-lose-overlay">
-            <div className="gg-lose-icon">😿</div>
-            <div className="gg-lose-text">Too slow!</div>
-            <button className="gg-retry-btn" onClick={() => startLevel(level)}>
-              Try Again
-            </button>
-          </div>
-        )}
+          )
+        })}
       </div>
 
-      <p className="gg-hint">
-        {gameState === 'playing' ? 'Tap the fur to groom!' : gameState === 'won' ? 'Good boy!' : 'Try again!'}
+      {selected && (
+        <div className="dq-stat-callout">
+          <span className="dq-stat-pct">{yourPct}%</span> {q.stat} picked the same!
+        </div>
+      )}
+
+      <p className="dq-footer-text">
+        {selected ? 'Next question coming...' : 'While your preview generates...'}
       </p>
     </div>
   )
