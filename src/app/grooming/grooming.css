@@ -1567,6 +1567,13 @@
   opacity: 0.6;
 }
 
+.footer-version {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-family: monospace;
+  opacity: 0.7;
+}
+
 /* Button overrides */
 .grooming-app .btn {
   padding: 14px 28px;

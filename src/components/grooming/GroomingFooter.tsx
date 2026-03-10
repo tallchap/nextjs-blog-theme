@@ -28,6 +28,7 @@ export default function GroomingFooter() {
         </div>
         <div className="footer-bottom">
           <p>&copy; 2026 PawStyle. All rights reserved.</p>
+          <p className="footer-version">Build: {process.env.NEXT_PUBLIC_COMMIT_HASH || 'dev'}</p>
         </div>
       </div>
     </footer>
