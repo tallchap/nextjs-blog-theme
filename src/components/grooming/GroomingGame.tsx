@@ -7,40 +7,40 @@ type FurTuft = {
   x: number
   y: number
   size: number
-  rotation: number
   alive: boolean
 }
 
-type Prize = {
-  emoji: string
-  name: string
-}
-
-const PRIZES: Prize[] = [
+const PRIZES = [
   { emoji: '🦴', name: 'Golden Bone' },
-  { emoji: '🎾', name: 'Championship Tennis Ball' },
+  { emoji: '🎾', name: 'Tennis Ball Trophy' },
   { emoji: '👑', name: 'Royal Crown' },
   { emoji: '🥩', name: 'Wagyu Steak' },
-  { emoji: '🏠', name: 'Luxury Doghouse' },
   { emoji: '💎', name: 'Diamond Collar' },
   { emoji: '🧸', name: 'Giant Teddy Bear' },
-  { emoji: '🍖', name: 'T-Bone Supreme' },
   { emoji: '🛁', name: 'Spa Day Pass' },
-  { emoji: '🏆', name: 'Grand Champion Trophy' },
+  { emoji: '🏆', name: 'Grand Champion Cup' },
 ]
 
+// Place fur tufts directly on the dog body area (center region)
 function generateFur(count: number): FurTuft[] {
   const tufts: FurTuft[] = []
+  // Dog body zones: head, body left, body right, legs
+  const zones = [
+    { cx: 50, cy: 25, rx: 18, ry: 12 },  // head
+    { cx: 38, cy: 48, rx: 14, ry: 18 },  // left body
+    { cx: 62, cy: 48, rx: 14, ry: 18 },  // right body
+    { cx: 50, cy: 50, rx: 20, ry: 15 },  // center body
+    { cx: 35, cy: 72, rx: 10, ry: 10 },  // front legs
+    { cx: 65, cy: 72, rx: 10, ry: 10 },  // back legs
+    { cx: 50, cy: 35, rx: 22, ry: 10 },  // upper body
+  ]
   for (let i = 0; i < count; i++) {
-    // Distribute around the dog area (center of the game board)
-    const angle = Math.random() * Math.PI * 2
-    const dist = 20 + Math.random() * 55
+    const zone = zones[i % zones.length]
     tufts.push({
       id: i,
-      x: 50 + Math.cos(angle) * dist * 0.8,
-      y: 48 + Math.sin(angle) * dist * 0.85,
-      size: 14 + Math.random() * 12,
-      rotation: Math.random() * 360,
+      x: zone.cx + (Math.random() - 0.5) * 2 * zone.rx,
+      y: zone.cy + (Math.random() - 0.5) * 2 * zone.ry,
+      size: 20 + Math.random() * 16,
       alive: true,
     })
   }
@@ -48,12 +48,9 @@ function generateFur(count: number): FurTuft[] {
 }
 
 function getLevelConfig(level: number) {
-  const baseFur = 10
-  const baseTime = 10
   return {
-    furCount: baseFur + level * 4,
-    timeLimit: Math.max(4, baseTime - level * 0.7),
-    clickPower: Math.max(1, 2 - Math.floor(level / 4)),
+    furCount: 8 + level * 5,
+    timeLimit: Math.max(5, 12 - (level - 1) * 1),
   }
 }
 
@@ -62,142 +59,89 @@ export default function GroomingGame() {
   const [fur, setFur] = useState<FurTuft[]>([])
   const [timeLeft, setTimeLeft] = useState(0)
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing')
-  const [prize, setPrize] = useState<Prize | null>(null)
   const [totalWins, setTotalWins] = useState(0)
-  const [snipEffects, setSnipEffects] = useState<{ id: number; x: number; y: number }[]>()
-  const snipIdRef = useRef(0)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [snips, setSnips] = useState<{ id: number; x: number; y: number }[]>([])
+  const snipId = useRef(0)
 
   const startLevel = useCallback((lvl: number) => {
     const config = getLevelConfig(lvl)
     setFur(generateFur(config.furCount))
     setTimeLeft(config.timeLimit)
     setGameState('playing')
-    setPrize(null)
-    setSnipEffects([])
+    setSnips([])
   }, [])
 
-  // Start first level on mount
-  useEffect(() => {
-    startLevel(1)
-  }, [startLevel])
+  useEffect(() => { startLevel(1) }, [startLevel])
 
-  // Timer
+  // Countdown timer
   useEffect(() => {
     if (gameState !== 'playing') return
-    timerRef.current = setInterval(() => {
+    const iv = setInterval(() => {
       setTimeLeft(prev => {
         const next = +(prev - 0.1).toFixed(1)
-        if (next <= 0) {
-          setGameState('lost')
-          return 0
-        }
+        if (next <= 0) { setGameState('lost'); return 0 }
         return next
       })
     }, 100)
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
+    return () => clearInterval(iv)
   }, [gameState])
 
-  // Check win condition
+  // Win check
   useEffect(() => {
-    if (gameState !== 'playing') return
-    const alive = fur.filter(f => f.alive).length
-    if (fur.length > 0 && alive === 0) {
+    if (gameState !== 'playing' || fur.length === 0) return
+    if (fur.every(f => !f.alive)) {
       setGameState('won')
-      const wins = totalWins + 1
-      setTotalWins(wins)
-      setPrize(PRIZES[(wins - 1) % PRIZES.length])
+      setTotalWins(w => w + 1)
     }
-  }, [fur, gameState, totalWins])
+  }, [fur, gameState])
 
-  const handleTuftClick = (id: number, e: React.MouseEvent) => {
+  const handleClick = (id: number, e: React.MouseEvent) => {
     if (gameState !== 'playing') return
     e.stopPropagation()
 
-    const rect = (e.currentTarget as HTMLElement).closest('.gg-board')?.getBoundingClientRect()
-    if (rect) {
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      const sid = snipIdRef.current++
-      setSnipEffects(prev => [...(prev || []), { id: sid, x, y }])
-      setTimeout(() => {
-        setSnipEffects(prev => (prev || []).filter(s => s.id !== sid))
-      }, 500)
+    // Snip effect at click position
+    const board = (e.currentTarget as HTMLElement).closest('.gg-board')
+    if (board) {
+      const rect = board.getBoundingClientRect()
+      const sid = snipId.current++
+      setSnips(prev => [...prev, { id: sid, x: e.clientX - rect.left, y: e.clientY - rect.top }])
+      setTimeout(() => setSnips(prev => prev.filter(s => s.id !== sid)), 500)
     }
 
-    const config = getLevelConfig(level)
-    setFur(prev => {
-      const updated = [...prev]
-      // Remove the clicked tuft
-      const idx = updated.findIndex(f => f.id === id && f.alive)
-      if (idx >= 0) updated[idx] = { ...updated[idx], alive: false }
-      // Remove extra nearby tufts based on click power
-      let extra = config.clickPower - 1
-      if (extra > 0) {
-        const clicked = updated.find(f => f.id === id)
-        if (clicked) {
-          for (let i = 0; i < updated.length && extra > 0; i++) {
-            if (updated[i].alive) {
-              const dx = updated[i].x - clicked.x
-              const dy = updated[i].y - clicked.y
-              if (Math.sqrt(dx * dx + dy * dy) < 18) {
-                updated[i] = { ...updated[i], alive: false }
-                extra--
-              }
-            }
-          }
-        }
-      }
-      return updated
-    })
-  }
-
-  const handleNextLevel = () => {
-    const next = level + 1
-    setLevel(next)
-    startLevel(next)
-  }
-
-  const handleRetry = () => {
-    startLevel(level)
+    setFur(prev => prev.map(f => f.id === id ? { ...f, alive: false } : f))
   }
 
   const aliveCount = fur.filter(f => f.alive).length
   const totalCount = fur.length
-  const progress = totalCount > 0 ? ((totalCount - aliveCount) / totalCount) * 100 : 0
+  const trimmed = totalCount > 0 ? (totalCount - aliveCount) / totalCount : 0
   const config = getLevelConfig(level)
-  const urgency = timeLeft < config.timeLimit * 0.3
+  const urgent = timeLeft < config.timeLimit * 0.3
+  const prize = PRIZES[(totalWins - 1) % PRIZES.length]
 
   return (
     <div className="gg-container">
       <div className="gg-hud">
-        <div className="gg-level">Level {level}</div>
-        <div className={`gg-timer ${urgency ? 'gg-urgent' : ''}`}>
-          {timeLeft.toFixed(1)}s
-        </div>
-        <div className="gg-score">{totalWins} {totalWins === 1 ? 'win' : 'wins'}</div>
+        <span className="gg-level">Level {level}</span>
+        <span className={`gg-timer ${urgent ? 'gg-urgent' : ''}`}>{timeLeft.toFixed(1)}s</span>
+        {totalWins > 0 && <span className="gg-score">{totalWins}x 🏅</span>}
       </div>
 
       <div className="gg-progress-bar">
-        <div className="gg-progress-fill" style={{ width: `${progress}%` }} />
+        <div className="gg-progress-fill" style={{ width: `${trimmed * 100}%` }} />
       </div>
 
       <div className="gg-board">
-        {/* Base dog - gets more visible as fur is removed */}
-        <div className="gg-dog" style={{ opacity: 0.3 + (progress / 100) * 0.7 }}>
+        {/* Groomed poodle underneath — fades in as fur is removed */}
+        <div className={`gg-poodle ${gameState === 'won' ? 'gg-dance' : ''}`} style={{ opacity: 0.15 + trimmed * 0.85 }}>
           🐩
         </div>
 
-        {/* Shaggy overlay - fades as you trim */}
-        {aliveCount > 0 && (
-          <div className="gg-shaggy" style={{ opacity: Math.min(1, aliveCount / totalCount + 0.1) }}>
-            🐕
-          </div>
-        )}
+        {/* Shaggy dog on top — fades out as fur is removed */}
+        <div className="gg-shaggy" style={{ opacity: Math.max(0, 1 - trimmed * 1.3) }}>
+          🐕
+        </div>
 
-        {/* Fur tufts */}
+        {/* Fur tufts layered on the dog */}
         {fur.map(tuft =>
           tuft.alive ? (
             <button
@@ -206,43 +150,40 @@ export default function GroomingGame() {
               style={{
                 left: `${tuft.x}%`,
                 top: `${tuft.y}%`,
-                fontSize: `${tuft.size}px`,
-                transform: `translate(-50%, -50%) rotate(${tuft.rotation}deg)`,
+                width: tuft.size,
+                height: tuft.size,
               }}
-              onClick={(e) => handleTuftClick(tuft.id, e)}
+              onClick={(e) => handleClick(tuft.id, e)}
             />
           ) : null
         )}
 
-        {/* Snip effects */}
-        {(snipEffects || []).map(s => (
-          <span key={s.id} className="gg-snip" style={{ left: s.x, top: s.y }}>
-            ✂️
-          </span>
+        {/* Scissors snip effects */}
+        {snips.map(s => (
+          <span key={s.id} className="gg-snip" style={{ left: s.x, top: s.y }}>✂️</span>
         ))}
 
-        {/* Win overlay */}
-        {gameState === 'won' && prize && (
+        {/* Win: blue ribbon + dancing poodle */}
+        {gameState === 'won' && (
           <div className="gg-win-overlay">
-            <div className="gg-ribbon">🏅</div>
+            <div className="gg-ribbon">🥇</div>
             <div className="gg-win-text">Groomed!</div>
             <div className="gg-prize">
-              <span className="gg-prize-emoji">{prize.emoji}</span>
+              <span>{prize.emoji}</span>
               <span className="gg-prize-name">{prize.name}</span>
             </div>
-            <button className="gg-next-btn" onClick={handleNextLevel}>
+            <button className="gg-next-btn" onClick={() => { setLevel(l => l + 1); startLevel(level + 1) }}>
               Level {level + 1} &rarr;
             </button>
           </div>
         )}
 
-        {/* Lose overlay */}
+        {/* Lose */}
         {gameState === 'lost' && (
           <div className="gg-lose-overlay">
             <div className="gg-lose-icon">😿</div>
             <div className="gg-lose-text">Too slow!</div>
-            <div className="gg-lose-sub">{aliveCount} tuft{aliveCount !== 1 ? 's' : ''} remaining</div>
-            <button className="gg-retry-btn" onClick={handleRetry}>
+            <button className="gg-retry-btn" onClick={() => startLevel(level)}>
               Try Again
             </button>
           </div>
@@ -250,12 +191,7 @@ export default function GroomingGame() {
       </div>
 
       <p className="gg-hint">
-        {gameState === 'playing'
-          ? 'Tap the fur to trim!'
-          : gameState === 'won'
-            ? 'Nice work, groomer!'
-            : 'Better luck next time!'
-        }
+        {gameState === 'playing' ? 'Tap the fur to groom!' : gameState === 'won' ? 'Good boy!' : 'Try again!'}
       </p>
     </div>
   )
