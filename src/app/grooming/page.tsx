@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import GroomingHeader from '@/components/grooming/GroomingHeader'
 import PhotoUpload from '@/components/grooming/PhotoUpload'
 import CoatCondition from '@/components/grooming/CoatCondition'
@@ -58,12 +58,35 @@ export default function GroomingPage() {
     estimatedDuration: 60,
     notes: ''
   })
+  // Pre-uploaded Gemini file reference for faster preview generation
+  const [geminiFileUri, setGeminiFileUri] = useState<string | null>(null)
+  const [geminiFileMime, setGeminiFileMime] = useState<string>('image/jpeg')
+  const uploadStartedRef = useRef(false)
 
   const handleImageUpload = (imageData: string, breed: string) => {
     setDogImage(imageData)
     setDogBreed(breed)
     setStep('condition')
   }
+
+  // Pre-upload image to Gemini File API as soon as we have it
+  useEffect(() => {
+    if (!dogImage || uploadStartedRef.current) return
+    uploadStartedRef.current = true
+    fetch('/api/upload-dog-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: dogImage, mimeType: 'image/jpeg' }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.fileUri) {
+          setGeminiFileUri(data.fileUri)
+          setGeminiFileMime(data.mimeType || 'image/jpeg')
+        }
+      })
+      .catch(() => { /* Fall back to inline base64 */ })
+  }, [dogImage])
 
   const handleConditionSubmit = (condition: CoatConditionType) => {
     setCoatCondition(condition)
@@ -138,6 +161,8 @@ export default function GroomingPage() {
                 dogImage={dogImage}
                 groomingStyle={groomingStyle}
                 dogBreed={dogBreed}
+                geminiFileUri={geminiFileUri}
+                geminiFileMime={geminiFileMime}
               />
               <GroomingOptions
                 groomingStyle={groomingStyle}

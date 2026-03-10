@@ -7,9 +7,9 @@ const MAX_RETRIES = 2
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, breed, changes } = await req.json()
+    const { imageBase64, mimeType, fileUri, fileMimeType, breed, changes } = await req.json()
 
-    if (!imageBase64 || !changes || changes.length === 0) {
+    if ((!imageBase64 && !fileUri) || !changes || changes.length === 0) {
       return NextResponse.json({ error: 'Image and at least one style change required' }, { status: 400 })
     }
 
@@ -35,10 +35,26 @@ ${changeDescriptions}
 
 Generate the edited image showing only these grooming changes applied to this exact dog.`
 
-    const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64
-    const imageMime = mimeType || 'image/jpeg'
+    // Build image part: prefer fileUri (pre-uploaded, faster) over inline base64
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let imagePart: any
+    if (fileUri) {
+      imagePart = {
+        fileData: {
+          fileUri: fileUri,
+          mimeType: fileMimeType || 'image/jpeg',
+        },
+      }
+    } else {
+      const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64
+      imagePart = {
+        inlineData: {
+          mimeType: mimeType || 'image/jpeg',
+          data: base64Data,
+        },
+      }
+    }
 
-    // Retry loop for transient 500s
     let lastError: string = ''
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
@@ -49,12 +65,7 @@ Generate the edited image showing only these grooming changes applied to this ex
               role: 'user',
               parts: [
                 { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: imageMime,
-                    data: base64Data,
-                  },
-                },
+                imagePart,
               ],
             },
           ],
@@ -82,13 +93,11 @@ Generate the edited image showing only these grooming changes applied to this ex
         const msg = err instanceof Error ? err.message : String(err)
         lastError = msg
 
-        // Retry on 500/INTERNAL errors
         if ((msg.includes('500') || msg.includes('INTERNAL')) && attempt < MAX_RETRIES) {
           await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
           continue
         }
 
-        // Rate limit
         if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
           return NextResponse.json({ error: 'Rate limited - please try again in a moment' }, { status: 429 })
         }
