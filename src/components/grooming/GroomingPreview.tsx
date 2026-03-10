@@ -11,6 +11,13 @@ type Props = {
   geminiFileMime: string
 }
 
+type DebugInfo = {
+  request: Record<string, unknown>
+  response: Record<string, unknown>
+  timestamp: string
+  durationMs: number
+}
+
 const STYLE_LABELS: Record<string, Record<string, string>> = {
   ears: { poofy: 'Poofy Ears', rounded: 'Rounded Ears', trimmed: 'Trimmed Ears' },
   tail: { bob: 'Bob Tail', pom: 'Pom Pom Tail', flag: 'Flag Tail' },
@@ -19,7 +26,6 @@ const STYLE_LABELS: Record<string, Record<string, string>> = {
   legs: { fluffy: 'Fluffy Legs', trimmed: 'Trimmed Legs', poodle: 'Poodle Legs' },
 }
 
-// Resize image to max dimension
 function resizeImage(dataUrl: string, maxDim: number): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image()
@@ -45,8 +51,9 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [previewOn, setPreviewOn] = useState(false)
-  // Track which style combo produced the current preview
   const [previewedStyleKey, setPreviewedStyleKey] = useState<string>('')
+  const [lastDebug, setLastDebug] = useState<DebugInfo | null>(null)
+  const [showDebug, setShowDebug] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
   const activeStyles = Object.entries(groomingStyle).filter(
@@ -65,10 +72,11 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
     setLoading(true)
     setError(null)
 
+    const startTime = Date.now()
+
     try {
       const changes = activeStyles.map(([area, style]) => ({ area, style }))
 
-      // Use fileUri if available (pre-uploaded, much faster), otherwise fall back to base64
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const body: any = { breed: dogBreed, changes }
       if (geminiFileUri) {
@@ -80,6 +88,12 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
         body.mimeType = 'image/jpeg'
       }
 
+      // Save request for debug (exclude large base64 from display)
+      const debugRequest = {
+        ...body,
+        imageBase64: body.imageBase64 ? `[base64 ${Math.round(body.imageBase64.length / 1024)}KB]` : undefined,
+      }
+
       const res = await fetch('/api/grooming-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,12 +101,26 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
         signal: controller.signal,
       })
 
+      const data = await res.json()
+      const durationMs = Date.now() - startTime
+
+      // Save debug info
+      setLastDebug({
+        request: debugRequest,
+        response: {
+          status: res.status,
+          ok: res.ok,
+          image: data.image ? `[image ${Math.round(data.image.length / 1024)}KB]` : undefined,
+          error: data.error || undefined,
+        },
+        timestamp: new Date().toISOString(),
+        durationMs,
+      })
+
       if (!res.ok) {
-        const data = await res.json()
         throw new Error(data.error || `Request failed (${res.status})`)
       }
 
-      const data = await res.json()
       if (data.image) {
         setGeneratedImage(data.image)
         setPreviewedStyleKey(styleKey)
@@ -110,10 +138,8 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
 
   const togglePreview = () => {
     if (!generatedImage || needsNewGeneration) {
-      // Need to generate first
       generatePreview()
     } else {
-      // Toggle between AI preview and original
       setPreviewOn(!previewOn)
     }
   }
@@ -132,9 +158,12 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
         <img src={displayImage} alt="Your dog" className="preview-base-image" />
 
         {loading && (
-          <div className="analyzing-overlay">
-            <div className="analyzing-spinner"></div>
-            <p>Generating groomed preview...</p>
+          <div className="grooming-loading-overlay">
+            <div className="grooming-animation">
+              <span className="grooming-dog">🐕</span>
+              <span className="grooming-scissors">✂️</span>
+            </div>
+            <p className="grooming-loading-text">Grooming in progress...</p>
           </div>
         )}
 
@@ -155,7 +184,6 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
         </div>
       </div>
 
-      {/* Grooming Preview toggle button */}
       {activeStyles.length > 0 && !loading && (
         <button
           className={`btn ${showingPreview ? 'btn-outline' : 'btn-primary'}`}
@@ -163,10 +191,10 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
           onClick={togglePreview}
         >
           {showingPreview
-            ? 'Grooming Preview: ON — Click to show original'
+            ? 'Grooming Preview: ON \u2014 Click to show original'
             : needsNewGeneration
               ? 'Grooming Preview'
-              : 'Grooming Preview: OFF — Click to show preview'
+              : 'Grooming Preview: OFF \u2014 Click to show preview'
           }
         </button>
       )}
@@ -204,9 +232,42 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
       {showingPreview && (
         <div className="preview-note">
           <p>
-            <strong>AI Generated Preview</strong> — Shows an approximation of your dog
+            <strong>AI Generated Preview</strong> \u2014 Shows an approximation of your dog
             with the selected grooming styles. Actual results may vary.
           </p>
+        </div>
+      )}
+
+      {/* Debug button */}
+      {lastDebug && (
+        <button
+          className="btn btn-outline"
+          style={{ width: '100%', marginTop: '8px', padding: '6px', fontSize: '0.75rem', opacity: 0.6 }}
+          onClick={() => setShowDebug(true)}
+        >
+          Debug Last API Call
+        </button>
+      )}
+
+      {/* Debug modal */}
+      {showDebug && lastDebug && (
+        <div className="debug-modal-overlay" onClick={() => setShowDebug(false)}>
+          <div className="debug-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="debug-modal-header">
+              <h3>Last API Call</h3>
+              <button className="debug-close" onClick={() => setShowDebug(false)}>&times;</button>
+            </div>
+            <div className="debug-modal-body">
+              <div className="debug-meta">
+                <span>Time: {lastDebug.timestamp}</span>
+                <span>Duration: {(lastDebug.durationMs / 1000).toFixed(1)}s</span>
+              </div>
+              <h4>Request</h4>
+              <pre className="debug-json">{JSON.stringify(lastDebug.request, null, 2)}</pre>
+              <h4>Response</h4>
+              <pre className="debug-json">{JSON.stringify(lastDebug.response, null, 2)}</pre>
+            </div>
+          </div>
         </div>
       )}
     </div>

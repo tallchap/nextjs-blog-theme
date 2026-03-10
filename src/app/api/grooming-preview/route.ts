@@ -29,6 +29,7 @@ CRITICAL RULES:
 - Do NOT change anything else about the dog or the image
 - The result should look like a realistic "after grooming" photo of THIS EXACT dog
 - Keep the same camera angle, lighting, and background
+- MOST IMPORTANT: If a body part (e.g. tail, back legs) is NOT visible in the photo, do NOT rearrange, repose, zoom out, or change the composition to reveal it. Only apply grooming changes to parts that are actually visible in the original photo. Stay 100% faithful to the original photo composition, angle, and framing. Ignore any requested changes for body parts that cannot be seen.
 
 GROOMING CHANGES TO APPLY:
 ${changeDescriptions}
