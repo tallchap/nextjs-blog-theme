@@ -39,7 +39,7 @@ Generate the edited image showing only these grooming changes applied to this ex
     const imageMime = mimeType || 'image/jpeg'
 
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.0-flash-exp-image-generation',
       contents: [
         {
           role: 'user',

@@ -23,10 +23,20 @@ export default function PhotoUpload({ onImageUpload }: Props) {
 
   const analyzeImage = useCallback(async (imageData: string) => {
     setIsAnalyzing(true)
-    // Simulate AI breed detection
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    const randomBreed = DOG_BREEDS[Math.floor(Math.random() * DOG_BREEDS.length)]
-    setDetectedBreed(randomBreed)
+    try {
+      const res = await fetch('/api/detect-breed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: imageData,
+          mimeType: imageData.match(/data:([^;]+)/)?.[1] || 'image/jpeg',
+        }),
+      })
+      const data = await res.json()
+      setDetectedBreed(data.breed || 'Mixed Breed')
+    } catch {
+      setDetectedBreed('Mixed Breed')
+    }
     setIsAnalyzing(false)
   }, [])
 

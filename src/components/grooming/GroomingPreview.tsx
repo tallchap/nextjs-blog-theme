@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { GroomingStyle } from '@/app/grooming/page'
 
 type Props = {
@@ -21,26 +21,21 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed }: P
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Track which style combo produced the current preview
+  const [previewedStyleKey, setPreviewedStyleKey] = useState<string>('')
   const abortRef = useRef<AbortController | null>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Track the style key that produced the current generated image
-  const lastStyleKeyRef = useRef<string>('')
 
   const activeStyles = Object.entries(groomingStyle).filter(
     ([, value]) => value !== 'natural'
   )
 
   const styleKey = activeStyles.map(([a, s]) => `${a}:${s}`).join(',')
+  const hasChangedSincePreview = styleKey !== previewedStyleKey
 
-  const generatePreview = useCallback(async () => {
+  const generatePreview = async () => {
     if (abortRef.current) abortRef.current.abort()
 
-    if (activeStyles.length === 0) {
-      setGeneratedImage(null)
-      setError(null)
-      lastStyleKeyRef.current = ''
-      return
-    }
+    if (activeStyles.length === 0) return
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -69,7 +64,7 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed }: P
       const data = await res.json()
       if (data.image) {
         setGeneratedImage(data.image)
-        lastStyleKeyRef.current = styleKey
+        setPreviewedStyleKey(styleKey)
       } else {
         throw new Error('No image returned')
       }
@@ -79,21 +74,9 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed }: P
     } finally {
       setLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [styleKey, dogImage, dogBreed])
+  }
 
-  // Debounce: wait 800ms after last style change before generating
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      generatePreview()
-    }, 800)
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [generatePreview])
-
-  const displayImage = generatedImage || dogImage
+  const displayImage = generatedImage && !hasChangedSincePreview ? generatedImage : dogImage
 
   return (
     <div className="grooming-preview">
@@ -117,7 +100,7 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed }: P
             <div className="no-changes-indicator">
               <span>No style changes - Natural look</span>
             </div>
-          ) : generatedImage && !loading ? (
+          ) : generatedImage && !hasChangedSincePreview && !loading ? (
             <div className="changes-indicator" style={{ background: 'rgba(16,185,129,0.85)' }}>
               <span>AI preview - {activeStyles.length} style{activeStyles.length > 1 ? 's' : ''} applied</span>
             </div>
@@ -129,8 +112,19 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed }: P
         </div>
       </div>
 
+      {/* See Preview button */}
+      {activeStyles.length > 0 && !loading && (
+        <button
+          className="btn btn-primary"
+          style={{ width: '100%', marginTop: '12px' }}
+          onClick={generatePreview}
+        >
+          {generatedImage && !hasChangedSincePreview ? 'Regenerate Preview' : 'See Preview'}
+        </button>
+      )}
+
       {error && (
-        <div className="preview-note" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626' }}>
+        <div className="preview-note" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', marginTop: '12px' }}>
           <p><strong>Preview error:</strong> {error}</p>
           <button
             className="btn btn-outline"
@@ -159,7 +153,7 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed }: P
         )}
       </div>
 
-      {generatedImage && (
+      {generatedImage && !hasChangedSincePreview && (
         <div className="preview-note">
           <p>
             <strong>AI Generated Preview</strong> - Shows an approximation of your dog
