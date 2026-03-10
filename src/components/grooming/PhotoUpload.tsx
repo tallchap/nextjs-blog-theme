@@ -1,17 +1,54 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 
 type Props = {
   onImageUpload: (imageData: string, breed: string) => void
 }
 
-const DOG_BREEDS = [
-  'Golden Retriever', 'Poodle', 'Labrador', 'German Shepherd', 'Bulldog',
-  'Shih Tzu', 'Yorkshire Terrier', 'Maltese', 'Bichon Frise', 'Cocker Spaniel',
-  'Schnauzer', 'Husky', 'Pomeranian', 'Cavalier King Charles', 'Border Collie',
-  'Dachshund', 'Beagle', 'Boxer', 'Great Dane', 'Mixed Breed'
-]
+const BREED_CATEGORIES: Record<string, string[]> = {
+  'Popular': [
+    'Golden Retriever', 'Labrador Retriever', 'German Shepherd', 'Poodle',
+    'Bulldog', 'Beagle', 'Rottweiler', 'Husky',
+  ],
+  'Sporting': [
+    'Golden Retriever', 'Labrador Retriever', 'Cocker Spaniel', 'English Springer Spaniel',
+    'Vizsla', 'Weimaraner', 'Irish Setter', 'Brittany',
+  ],
+  'Toy': [
+    'Chihuahua', 'Pomeranian', 'Yorkshire Terrier', 'Maltese',
+    'Shih Tzu', 'Cavalier King Charles', 'Papillon', 'Havanese',
+    'Toy Poodle', 'Pekingese',
+  ],
+  'Terrier': [
+    'Yorkshire Terrier', 'Schnauzer', 'West Highland White Terrier', 'Bull Terrier',
+    'Airedale Terrier', 'Scottish Terrier', 'Jack Russell Terrier', 'Cairn Terrier',
+  ],
+  'Working': [
+    'Rottweiler', 'Boxer', 'Great Dane', 'Doberman Pinscher',
+    'Bernese Mountain Dog', 'Saint Bernard', 'Newfoundland', 'Mastiff',
+  ],
+  'Herding': [
+    'German Shepherd', 'Border Collie', 'Australian Shepherd', 'Corgi',
+    'Shetland Sheepdog', 'Belgian Malinois', 'Old English Sheepdog', 'Collie',
+  ],
+  'Hound': [
+    'Beagle', 'Dachshund', 'Basset Hound', 'Greyhound',
+    'Bloodhound', 'Whippet', 'Afghan Hound', 'Rhodesian Ridgeback',
+  ],
+  'Non-Sporting': [
+    'Bulldog', 'Poodle', 'Bichon Frise', 'Dalmatian',
+    'Chow Chow', 'Shiba Inu', 'Boston Terrier', 'French Bulldog',
+  ],
+  'Designer / Mixed': [
+    'Goldendoodle', 'Labradoodle', 'Cockapoo', 'Bernedoodle',
+    'Maltipoo', 'Cavapoo', 'Pomsky', 'Aussiedoodle',
+    'Puggle', 'Mixed Breed',
+  ],
+}
+
+// Deduplicated flat list for search
+const ALL_BREEDS = Array.from(new Set(Object.values(BREED_CATEGORIES).flat())).sort()
 
 export default function PhotoUpload({ onImageUpload }: Props) {
   const [dragActive, setDragActive] = useState(false)
@@ -19,7 +56,11 @@ export default function PhotoUpload({ onImageUpload }: Props) {
   const [detectedBreed, setDetectedBreed] = useState<string>('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [manualBreed, setManualBreed] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [showBreedPicker, setShowBreedPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const analyzeImage = useCallback(async (imageData: string) => {
     setIsAnalyzing(true)
@@ -77,7 +118,6 @@ export default function PhotoUpload({ onImageUpload }: Props) {
     }
   }, [handleFile])
 
-  // Global paste listener for clipboard images
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
@@ -95,6 +135,19 @@ export default function PhotoUpload({ onImageUpload }: Props) {
     return () => document.removeEventListener('paste', handlePaste)
   }, [handleFile])
 
+  const filteredBreeds = useMemo(() => {
+    if (!searchQuery.trim()) return null
+    const q = searchQuery.toLowerCase()
+    return ALL_BREEDS.filter(b => b.toLowerCase().includes(q))
+  }, [searchQuery])
+
+  const selectBreed = (breed: string) => {
+    setManualBreed(breed)
+    setShowBreedPicker(false)
+    setSearchQuery('')
+    setActiveCategory(null)
+  }
+
   const handleContinue = () => {
     if (previewImage) {
       const breed = manualBreed || detectedBreed || 'Mixed Breed'
@@ -106,17 +159,22 @@ export default function PhotoUpload({ onImageUpload }: Props) {
     setPreviewImage(null)
     setDetectedBreed('')
     setManualBreed('')
+    setShowBreedPicker(false)
+    setSearchQuery('')
+    setActiveCategory(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
+  const displayBreed = manualBreed || detectedBreed
+
   return (
     <section className="photo-upload-section">
       <div className="container">
         <div className="upload-header">
-          <h1>Upload Your Dog's Photo</h1>
-          <p>We'll analyze the photo and suggest the best grooming options for your furry friend</p>
+          <h1>Upload Your Dog&apos;s Photo</h1>
+          <p>We&apos;ll analyze the photo and suggest the best grooming options for your furry friend</p>
         </div>
 
         {!previewImage ? (
@@ -129,7 +187,7 @@ export default function PhotoUpload({ onImageUpload }: Props) {
             onClick={() => fileInputRef.current?.click()}
           >
             <div className="upload-icon">📷</div>
-            <h3>Drop your dog's photo here</h3>
+            <h3>Drop your dog&apos;s photo here</h3>
             <p>or click to browse files</p>
             <p style={{ marginTop: '8px', fontSize: '0.9rem' }}>You can also <strong>paste</strong> an image from your clipboard (Ctrl+V / Cmd+V)</p>
             <div className="upload-formats">Supports JPG, PNG, WEBP</div>
@@ -159,21 +217,106 @@ export default function PhotoUpload({ onImageUpload }: Props) {
               ) : (
                 <>
                   <div className="detected-breed">
-                    <span className="label">Detected Breed:</span>
-                    <span className="breed-name">{detectedBreed}</span>
+                    <span className="label">
+                      {manualBreed ? 'Selected Breed:' : 'Detected Breed:'}
+                    </span>
+                    <span className="breed-name">{displayBreed}</span>
                   </div>
-                  <div className="breed-override">
-                    <label>Not quite right? Select the correct breed:</label>
-                    <select
-                      value={manualBreed}
-                      onChange={(e) => setManualBreed(e.target.value)}
+
+                  {!showBreedPicker ? (
+                    <button
+                      className="btn btn-outline"
+                      style={{ width: '100%', marginTop: '8px' }}
+                      onClick={() => {
+                        setShowBreedPicker(true)
+                        setTimeout(() => searchInputRef.current?.focus(), 100)
+                      }}
                     >
-                      <option value="">Use detected breed</option>
-                      {DOG_BREEDS.map(breed => (
-                        <option key={breed} value={breed}>{breed}</option>
-                      ))}
-                    </select>
-                  </div>
+                      Not right? Change breed
+                    </button>
+                  ) : (
+                    <div className="breed-picker">
+                      {/* Search */}
+                      <div className="breed-search">
+                        <input
+                          ref={searchInputRef}
+                          type="text"
+                          placeholder="Search breeds..."
+                          value={searchQuery}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value)
+                            if (e.target.value) setActiveCategory(null)
+                          }}
+                          className="breed-search-input"
+                        />
+                      </div>
+
+                      {/* Search results */}
+                      {filteredBreeds ? (
+                        <div className="breed-grid">
+                          {filteredBreeds.length === 0 ? (
+                            <p className="no-breeds-found">No breeds match &quot;{searchQuery}&quot;</p>
+                          ) : (
+                            filteredBreeds.map(breed => (
+                              <button
+                                key={breed}
+                                className={`breed-chip ${displayBreed === breed ? 'active' : ''}`}
+                                onClick={() => selectBreed(breed)}
+                              >
+                                {breed}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {/* Category tabs */}
+                          <div className="breed-categories">
+                            {Object.keys(BREED_CATEGORIES).map(cat => (
+                              <button
+                                key={cat}
+                                className={`category-tab ${activeCategory === cat ? 'active' : ''}`}
+                                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                              >
+                                {cat}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Breeds in selected category */}
+                          {activeCategory && (
+                            <div className="breed-grid">
+                              {BREED_CATEGORIES[activeCategory].map(breed => (
+                                <button
+                                  key={breed}
+                                  className={`breed-chip ${displayBreed === breed ? 'active' : ''}`}
+                                  onClick={() => selectBreed(breed)}
+                                >
+                                  {breed}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {!activeCategory && (
+                            <p className="breed-picker-hint">Select a category or search above</p>
+                          )}
+                        </>
+                      )}
+
+                      <button
+                        className="btn btn-outline"
+                        style={{ width: '100%', marginTop: '12px', padding: '8px' }}
+                        onClick={() => {
+                          setShowBreedPicker(false)
+                          setSearchQuery('')
+                          setActiveCategory(null)
+                        }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -196,7 +339,7 @@ export default function PhotoUpload({ onImageUpload }: Props) {
         <div className="upload-tips">
           <h4>Tips for best results:</h4>
           <ul>
-            <li>Use a well-lit photo showing your dog's full body</li>
+            <li>Use a well-lit photo showing your dog&apos;s full body</li>
             <li>Ensure the photo is clear and not blurry</li>
             <li>Side or 3/4 angle works best for style preview</li>
           </ul>
