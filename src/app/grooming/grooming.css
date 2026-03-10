@@ -354,6 +354,70 @@
   padding: 8px 0;
 }
 
+/* Crop UI */
+.crop-wrapper {
+  position: relative;
+  border-radius: var(--grooming-radius);
+  overflow: hidden;
+  line-height: 0;
+}
+
+.crop-image {
+  width: 100%;
+  display: block;
+}
+
+.crop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  /* Use CSS mask to cut out the crop hole */
+}
+
+.crop-hole {
+  position: absolute;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  border: 2px solid white;
+  border-radius: 4px;
+}
+
+.crop-overlay {
+  display: none;
+}
+
+.crop-wrapper .crop-hole {
+  z-index: 2;
+}
+
+.crop-slider {
+  width: 100%;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--grooming-border);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.crop-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  background: var(--grooming-primary);
+  border-radius: 50%;
+  cursor: grab;
+}
+
+.crop-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: var(--grooming-primary);
+  border-radius: 50%;
+  cursor: grab;
+  border: none;
+}
+
 .preview-actions {
   display: flex;
   gap: 16px;

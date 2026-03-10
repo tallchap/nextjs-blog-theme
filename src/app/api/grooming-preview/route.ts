@@ -60,6 +60,9 @@ Generate the edited image showing only these grooming changes applied to this ex
           ],
           config: {
             responseModalities: ['IMAGE'],
+            imageConfig: {
+              aspectRatio: '1:1',
+            },
           },
         })
 
