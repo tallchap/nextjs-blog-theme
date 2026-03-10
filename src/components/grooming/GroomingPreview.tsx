@@ -17,6 +17,27 @@ const STYLE_LABELS: Record<string, Record<string, string>> = {
   legs: { fluffy: 'Fluffy Legs', trimmed: 'Trimmed Legs', poodle: 'Poodle Legs' },
 }
 
+// Resize image to max dimension to avoid Gemini payload limits
+function resizeImage(dataUrl: string, maxDim: number): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      if (img.width <= maxDim && img.height <= maxDim) {
+        resolve(dataUrl)
+        return
+      }
+      const scale = maxDim / Math.max(img.width, img.height)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/jpeg', 0.85))
+    }
+    img.src = dataUrl
+  })
+}
+
 export default function GroomingPreview({ dogImage, groomingStyle, dogBreed }: Props) {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -43,13 +64,15 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed }: P
     setError(null)
 
     try {
+      // Resize to 1024px max to avoid payload/API limits
+      const resized = await resizeImage(dogImage, 1024)
       const changes = activeStyles.map(([area, style]) => ({ area, style }))
       const res = await fetch('/api/grooming-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageBase64: dogImage,
-          mimeType: dogImage.match(/data:([^;]+)/)?.[1] || 'image/jpeg',
+          imageBase64: resized,
+          mimeType: 'image/jpeg',
           breed: dogBreed,
           changes,
         }),

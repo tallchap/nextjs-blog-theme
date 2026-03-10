@@ -3,6 +3,8 @@ import { GoogleGenAI } from '@google/genai'
 
 const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' })
 
+const MAX_RETRIES = 2
+
 export async function POST(req: NextRequest) {
   try {
     const { imageBase64, mimeType, breed, changes } = await req.json()
@@ -15,7 +17,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 500 })
     }
 
-    // Build a very specific prompt that preserves the dog exactly
     const changeDescriptions = changes.map((c: { area: string; style: string }) => {
       return `${c.area}: ${getStyleDescription(c.area, c.style)}`
     }).join('\n')
@@ -34,55 +35,70 @@ ${changeDescriptions}
 
 Generate the edited image showing only these grooming changes applied to this exact dog.`
 
-    // Strip the data:image/...;base64, prefix if present
     const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64
     const imageMime = mimeType || 'image/jpeg'
 
-    const response = await client.models.generateContent({
-      model: 'gemini-3.1-flash-image-preview',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: prompt },
+    // Retry loop for transient 500s
+    let lastError: string = ''
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await client.models.generateContent({
+          model: 'gemini-3.1-flash-image-preview',
+          contents: [
             {
-              inlineData: {
-                mimeType: imageMime,
-                data: base64Data,
-              },
+              role: 'user',
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: imageMime,
+                    data: base64Data,
+                  },
+                },
+              ],
             },
           ],
-        },
-      ],
-      config: {
-        responseModalities: ['IMAGE'],
-        imageConfig: {
-          aspectRatio: '1:1',
-        },
-      },
-    })
+          config: {
+            responseModalities: ['IMAGE'],
+          },
+        })
 
-    // Extract the generated image
-    const candidates = response.candidates
-    if (candidates && candidates[0]?.content?.parts) {
-      for (const part of candidates[0].content.parts) {
-        if (part.inlineData?.data) {
-          return NextResponse.json({
-            image: `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`,
-          })
+        const candidates = response.candidates
+        if (candidates && candidates[0]?.content?.parts) {
+          for (const part of candidates[0].content.parts) {
+            if (part.inlineData?.data) {
+              return NextResponse.json({
+                image: `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`,
+              })
+            }
+          }
         }
+
+        lastError = 'No image in response'
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        lastError = msg
+
+        // Retry on 500/INTERNAL errors
+        if ((msg.includes('500') || msg.includes('INTERNAL')) && attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+          continue
+        }
+
+        // Rate limit
+        if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+          return NextResponse.json({ error: 'Rate limited - please try again in a moment' }, { status: 429 })
+        }
+
+        break
       }
     }
 
-    return NextResponse.json({ error: 'No image generated' }, { status: 500 })
+    console.error('Grooming preview failed after retries:', lastError)
+    return NextResponse.json({ error: lastError || 'No image generated' }, { status: 500 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('Grooming preview error:', message)
-
-    if (message.includes('429') || message.includes('RESOURCE_EXHAUSTED')) {
-      return NextResponse.json({ error: 'Rate limited - please try again in a moment' }, { status: 429 })
-    }
-
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
