@@ -721,11 +721,14 @@
   border-radius: var(--grooming-radius);
   overflow: hidden;
   margin-bottom: 16px;
+  aspect-ratio: 1 / 1;
 }
 
 .preview-base-image {
   width: 100%;
+  height: 100%;
   display: block;
+  object-fit: cover;
 }
 
 .style-overlays {
