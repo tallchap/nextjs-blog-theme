@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
 
 CRITICAL RULES:
 - The dog must look EXACTLY the same - same breed, same face, same eyes, same expression, same coloring, same markings, same body position, same background
+- Maintain the EXACT body outline, proportions, silhouette, and pose
+- Preserve the exact background, lighting, and scene - do not change or remove the background
+- Only modify the fur length and texture in the specified areas - do not reshape any body part
+- The dog's skeleton, musculature, and joint positions must remain identical to the input photo
 - ONLY modify the specific body parts listed below with the exact grooming style requested
 - Do NOT change anything else about the dog or the image
 - The result should look like a realistic "after grooming" photo of THIS EXACT dog
@@ -72,10 +76,8 @@ Generate the edited image showing only these grooming changes applied to this ex
           ],
           config: {
             responseModalities: ['IMAGE'],
-            imageConfig: {
-              aspectRatio: '1:1',
-            },
           },
+
         })
 
         const candidates = response.candidates

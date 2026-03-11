@@ -1839,3 +1839,47 @@
   max-height: 200px;
   overflow-y: auto;
 }
+
+/* Preview Tab Switcher */
+.preview-tab-switcher {
+  display: flex;
+  background: var(--grooming-border);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 12px;
+  gap: 3px;
+}
+
+.preview-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--grooming-text-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-tab:hover {
+  color: var(--grooming-text);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.preview-tab-active {
+  background: #fff;
+  color: var(--grooming-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.preview-tab-active.preview-tab-yourdog {
+  border-bottom: 2px solid var(--grooming-primary);
+  color: var(--grooming-primary);
+}
+
+.preview-tab-active.preview-tab-lookbook {
+  border-bottom: 2px solid var(--grooming-secondary);
+  color: #b45309;
+}

@@ -13,37 +13,37 @@ const BREED_CATEGORIES: Record<string, string[]> = {
   ],
   'Sporting': [
     'Golden Retriever', 'Labrador Retriever', 'Cocker Spaniel', 'English Springer Spaniel',
-    'Vizsla', 'Weimaraner', 'Irish Setter', 'Brittany',
+    'Vizsla', 'Weimaraner', 'Irish Setter', 'Brittany', 'Sporting Mutt',
   ],
   'Toy': [
     'Chihuahua', 'Pomeranian', 'Yorkshire Terrier', 'Maltese',
     'Shih Tzu', 'Cavalier King Charles', 'Papillon', 'Havanese',
-    'Toy Poodle', 'Pekingese',
+    'Toy Poodle', 'Pekingese', 'Toy Mutt',
   ],
   'Terrier': [
     'Yorkshire Terrier', 'Schnauzer', 'West Highland White Terrier', 'Bull Terrier',
-    'Airedale Terrier', 'Scottish Terrier', 'Jack Russell Terrier', 'Cairn Terrier',
+    'Airedale Terrier', 'Scottish Terrier', 'Jack Russell Terrier', 'Cairn Terrier', 'Terrier Mutt',
   ],
   'Working': [
     'Rottweiler', 'Boxer', 'Great Dane', 'Doberman Pinscher',
-    'Bernese Mountain Dog', 'Saint Bernard', 'Newfoundland', 'Mastiff',
+    'Bernese Mountain Dog', 'Saint Bernard', 'Newfoundland', 'Mastiff', 'Working Mutt',
   ],
   'Herding': [
     'German Shepherd', 'Border Collie', 'Australian Shepherd', 'Corgi',
-    'Shetland Sheepdog', 'Belgian Malinois', 'Old English Sheepdog', 'Collie',
+    'Shetland Sheepdog', 'Belgian Malinois', 'Old English Sheepdog', 'Collie', 'Herding Mutt',
   ],
   'Hound': [
     'Beagle', 'Dachshund', 'Basset Hound', 'Greyhound',
-    'Bloodhound', 'Whippet', 'Afghan Hound', 'Rhodesian Ridgeback',
+    'Bloodhound', 'Whippet', 'Afghan Hound', 'Rhodesian Ridgeback', 'Hound Mutt',
   ],
   'Non-Sporting': [
     'Bulldog', 'Poodle', 'Bichon Frise', 'Dalmatian',
-    'Chow Chow', 'Shiba Inu', 'Boston Terrier', 'French Bulldog',
+    'Chow Chow', 'Shiba Inu', 'Boston Terrier', 'French Bulldog', 'Non-Sporting Mutt',
   ],
   'Designer / Mixed': [
     'Goldendoodle', 'Labradoodle', 'Cockapoo', 'Bernedoodle',
     'Maltipoo', 'Cavapoo', 'Pomsky', 'Aussiedoodle',
-    'Puggle', 'Mixed Breed',
+    'Puggle', 'Mixed Breed', 'Designer Mutt',
   ],
 }
 
