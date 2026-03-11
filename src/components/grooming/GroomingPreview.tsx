@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { GroomingStyle } from '@/app/grooming/page'
 import GroomingGame from './GroomingGame'
 
@@ -83,6 +83,12 @@ export default function GroomingPreview({ dogImage, groomingStyle, dogBreed, gem
   const lookbookNeedsNewGeneration = styleKey !== lookbookStyleKey
 
   // Fetch lookbook base image on first access
+  // Prefetch lookbook base image immediately
+  useEffect(() => {
+    fetchLookbookBase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dogBreed])
+
   const fetchLookbookBase = async () => {
     if (lookbookBaseImage) return
     try {
